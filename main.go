@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	// "flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -13,6 +14,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	// "strings"
 	"sync"
 	"time"
 )
@@ -151,15 +153,31 @@ func handlerICon(w http.ResponseWriter, r *http.Request) {
 	lissajous(w)
 }
 
+// var n = flag.Bool("n", false, "omit trailing newline")
+// var sep = flag.String("s", " ", "separtor")
+
 func main() {
 	// findDuplicateLines()
 	// animateGifs()
 	// fetchUrls()
+
 	// fetchUrlsConcurrently()
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		lissajous(w)
-	})
-	http.HandleFunc("/count", counter)
-	http.HandleFunc("/favicon.ico", handlerICon)
-	log.Fatal(http.ListenAndServe("localhost:8000", nil))
+
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	lissajous(w)
+	// })
+	// http.HandleFunc("/count", counter)
+	// http.HandleFunc("/favicon.ico", handlerICon)
+	// log.Fatal(http.ListenAndServe("localhost:8000", nil))
+
+	// flag.Parse()
+	// fmt.Print(strings.Join(flag.Args(), *sep))
+	// if !*n {
+	// 	fmt.Println()
+	// }
+
+	p := new(struct{})
+	q := new(struct{})
+
+	fmt.Println(p == q)
 }
