@@ -15,6 +15,8 @@ import (
 	"net/http"
 	"os"
 	// "strings"
+	"bytes"
+	"strings"
 	"sync"
 	"time"
 )
@@ -199,6 +201,23 @@ func f(x, y float64) float64 {
 	return math.Sin(r) / r
 }
 
+func basename(s string) string {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '/' {
+			s = s[i+1:]
+			break
+		}
+	}
+
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '.' {
+			s = s[:i]
+			break
+		}
+	}
+	return s
+}
+
 func main() {
 	// findDuplicateLines()
 	// animateGifs()
@@ -236,9 +255,27 @@ func main() {
 	// fmt.Printf("%d %[1]c %[1]q \n", unicode)
 	// fmt.Printf("%d %[1]q \n", newLine)
 	// svg()
-	s := `asdfasdfas
-	asdfasdf
-	asdfasd\\\\\asdfasd
-	asdfas`
+	// s := `asdfasdfas
+	// asdfasdf
+	// asdfasd\\\\\asdfasd
+	// asdfas`
+	// fmt.Println(s)
+
+	s := []int{1, 2, 3, 4, 5}
+	// s := "abcdef"
+	ss := s[:]
+	fmt.Println(&s)
+	fmt.Println(&ss)
+	for i, c := range ss {
+		c++
+		// s[i]++
+		fmt.Println(c)
+		fmt.Println(ss[i])
+	}
+
+	strings.Contains()
+	bytes.Contains
+
 	fmt.Println(s)
+	fmt.Println(ss)
 }
