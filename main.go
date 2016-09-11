@@ -245,6 +245,23 @@ func crawl(url string) []string {
 	return list
 }
 
+func basename(s string) string {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '/' {
+			s = s[i+1:]
+			break
+		}
+	}
+
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '.' {
+			s = s[:i]
+			break
+		}
+	}
+	return s
+}
+
 func main() {
 	// s1 := make([]int, 4)
 	// s2 := []int{1, 2, 3, 4, 56, 7, 8, 9}
@@ -260,6 +277,65 @@ func main() {
 	// m["aaa"] = append(m["aaa"], "aaa")
 	// s := son{a{1}, b{2}}
 	// fmt.Println(s.a.ma())
+	// findDuplicateLines()
+	// animateGifs()
+	// fetchUrls()
+
+	// fetchUrlsConcurrently()
+
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	lissajous(w)
+	// })
+	// http.HandleFunc("/count", counter)
+	// http.HandleFunc("/favicon.ico", handlerICon)
+	// log.Fatal(http.ListenAndServe("localhost:8000", nil))
+
+	// flag.Parse()
+	// fmt.Print(strings.Join(flag.Args(), *sep))
+	// if !*n {
+	// 	fmt.Println()
+	// }
+
+	// p := new(struct{})
+	// q := new(struct{})
+
+	// fmt.Println(p == q)
+
+	// ascii := 'a'
+	// unicode := '国'
+	// newLine := '\n'
+
+	// for x := 0; x < 15; x++ {
+	// 	fmt.Printf("x = %d e A = %5.3f\n", x, math.Exp(float64(x)))
+	// }
+
+	// fmt.Printf("%d %[1]c %[1]q \n", ascii)
+	// fmt.Printf("%d %[1]c %[1]q \n", unicode)
+	// fmt.Printf("%d %[1]q \n", newLine)
+	// svg()
+	// s := `asdfasdfas
+	// asdfasdf
+	// asdfasd\\\\\asdfasd
+	// asdfas`
+	// fmt.Println(s)
+
+	// s := []int{1, 2, 3, 4, 5}
+	// // s := "abcdef"
+	// ss := s[:]
+	// fmt.Println(&s)
+	// fmt.Println(&ss)
+	// for i, c := range ss {
+	// 	c++
+	// 	// s[i]++
+	// 	fmt.Println(c)
+	// 	fmt.Println(ss[i])
+	// }
+
+	// strings.Contains()
+	// bytes.Contains
+
+	// fmt.Println(s)
+	// fmt.Println(ss)
 
 	worklist := make(chan []string)
 	go func() { worklist <- os.Args[1:] }()
