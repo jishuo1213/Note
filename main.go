@@ -15,8 +15,7 @@ import (
 	"net/http"
 	"os"
 	// "strings"
-	"bytes"
-	"strings"
+	// "bytes"
 	"sync"
 	"time"
 )
@@ -218,6 +217,34 @@ func basename(s string) string {
 	return s
 }
 
+func testNilSlice(s []int) []int {
+	s = append(s, 1)
+	return s
+}
+
+func testchan() int {
+	ch := make(chan int, 3)
+	go func() {
+		time.Sleep(1 * time.Second)
+		fmt.Println("first")
+		ch <- 1
+	}()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		fmt.Println("second")
+		ch <- 1
+	}()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		fmt.Println("third")
+		ch <- 1
+	}()
+
+	return <-ch
+}
+
 func main() {
 	// findDuplicateLines()
 	// animateGifs()
@@ -261,21 +288,48 @@ func main() {
 	// asdfas`
 	// fmt.Println(s)
 
-	s := []int{1, 2, 3, 4, 5}
-	// s := "abcdef"
-	ss := s[:]
-	fmt.Println(&s)
-	fmt.Println(&ss)
-	for i, c := range ss {
-		c++
-		// s[i]++
-		fmt.Println(c)
-		fmt.Println(ss[i])
-	}
+	// s := []int{1, 2, 3, 4, 5}
+	// // s := "abcdef"
+	// ss := s[:]
+	// fmt.Println(&s)
+	// fmt.Println(&ss)
+	// for i, c := range ss {
+	// 	c++
+	// 	// s[i]++
+	// 	fmt.Println(c)
+	// 	fmt.Println(ss[i])
+	// }
 
-	strings.Contains()
-	bytes.Contains
+	// fmt.Println(s)
+	// fmt.Println(ss)
 
-	fmt.Println(s)
-	fmt.Println(ss)
+	// var buf bytes.Buffer
+	// length, _ := buf.WriteRune('[')
+	// fmt.Println(length)
+	// length, _ = buf.WriteRune('樊')
+	// fmt.Println(length)
+	// s := buf.String()
+	// fmt.Println(len(s))
+	// fmt.Println(buf.String())
+	// tests := []int{}
+	// tests = append(tests, 1)
+	//s := testNilSlice(nil)
+	//fmt.Println(s)
+	//fmt.Println(len(s))
+	//fmt.Println(cap(s))
+	// var x interface{}
+	// x = true
+	// switch x := x.(type) {
+	// case int:
+	// 	fmt.Println(x)
+	// 	break
+	// case bool:
+	// 	if x {
+	// 		fmt.Println(x)
+	// 	}
+	// 	break
+	// }
+
+	testchan()
+	time.Sleep(2 * time.Second)
 }
