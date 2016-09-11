@@ -15,8 +15,10 @@ import (
 	"net/http"
 	"os"
 	// "strings"
+	"links"
 	"sync"
 	"time"
+	// "unicode/utf8"
 )
 
 func findDuplicateLines() {
@@ -199,46 +201,78 @@ func f(x, y float64) float64 {
 	return math.Sin(r) / r
 }
 
+type a struct {
+	X int
+}
+
+func (pa a) ma() int {
+	return pa.X
+}
+
+type b struct {
+	X int
+}
+
+func (pa b) ma() int {
+	return pa.X
+}
+
+type son struct {
+	a
+	b
+}
+
+func testWaitGroup() {
+	res := make(chan int)
+	var wg sync.WaitGroup
+	for i := range []int{1, 2, 3, 4, 5} {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			time.Sleep(time.Second * 2)
+			res <- i
+		}(i)
+	}
+	wg.Wait()
+}
+
+func crawl(url string) []string {
+	fmt.Println(url)
+	list, err := links.Extract(url)
+	if err != nil {
+		log.Print(err)
+	}
+	return list
+}
+
 func main() {
-	// findDuplicateLines()
-	// animateGifs()
-	// fetchUrls()
+	// s1 := make([]int, 4)
+	// s2 := []int{1, 2, 3, 4, 56, 7, 8, 9}
+	// res := copy(s1, s2)
+	// fmt.Println(s1)
+	// fmt.Println(res)
 
-	// fetchUrlsConcurrently()
+	// var m map[string][]string
+	// m := make(map[string][]string)
+	// m := map[string][]string{"aaa": {"bbb"}}
+	// m["aaa"] = make([]string, 5)
+	// fmt.Println(cap(m["aaa"]))
+	// m["aaa"] = append(m["aaa"], "aaa")
+	// s := son{a{1}, b{2}}
+	// fmt.Println(s.a.ma())
 
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	lissajous(w)
-	// })
-	// http.HandleFunc("/count", counter)
-	// http.HandleFunc("/favicon.ico", handlerICon)
-	// log.Fatal(http.ListenAndServe("localhost:8000", nil))
+	worklist := make(chan []string)
+	go func() { worklist <- os.Args[1:] }()
 
-	// flag.Parse()
-	// fmt.Print(strings.Join(flag.Args(), *sep))
-	// if !*n {
-	// 	fmt.Println()
-	// }
-
-	// p := new(struct{})
-	// q := new(struct{})
-
-	// fmt.Println(p == q)
-
-	// ascii := 'a'
-	// unicode := '国'
-	// newLine := '\n'
-
-	// for x := 0; x < 15; x++ {
-	// 	fmt.Printf("x = %d e A = %5.3f\n", x, math.Exp(float64(x)))
-	// }
-
-	// fmt.Printf("%d %[1]c %[1]q \n", ascii)
-	// fmt.Printf("%d %[1]c %[1]q \n", unicode)
-	// fmt.Printf("%d %[1]q \n", newLine)
-	// svg()
-	s := `asdfasdfas
-	asdfasdf
-	asdfasd\\\\\asdfasd
-	asdfas`
-	fmt.Println(s)
+	seen := make(map[string]bool)
+	for list := range worklist {
+		for _, link := range list {
+			if !seen[link] {
+				seen[link] = true
+				go func(link string) {
+					worklist <- crawl(link)
+				}(link)
+			}
+		}
+	}
 }
