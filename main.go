@@ -343,10 +343,12 @@ func main() {
 	seen := make(map[string]bool)
 	for list := range worklist {
 		for _, link := range list {
+			fmt.Println(link)
 			if !seen[link] {
 				seen[link] = true
 				go func(link string) {
-					worklist <- crawl(link)
+					// worklist <- crawl(link)
+					crawl(link)
 				}(link)
 			}
 		}
