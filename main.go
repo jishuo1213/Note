@@ -16,8 +16,10 @@ import (
 	"os"
 	// "strings"
 	// "bytes"
+	"links"
 	"sync"
 	"time"
+	// "unicode/utf8"
 )
 
 func findDuplicateLines() {
@@ -200,6 +202,50 @@ func f(x, y float64) float64 {
 	return math.Sin(r) / r
 }
 
+type a struct {
+	X int
+}
+
+func (pa a) ma() int {
+	return pa.X
+}
+
+type b struct {
+	X int
+}
+
+func (pa b) ma() int {
+	return pa.X
+}
+
+type son struct {
+	a
+	b
+}
+
+func testWaitGroup() {
+	res := make(chan int)
+	var wg sync.WaitGroup
+	for i := range []int{1, 2, 3, 4, 5} {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			time.Sleep(time.Second * 2)
+			res <- i
+		}(i)
+	}
+	wg.Wait()
+}
+
+func crawl(url string) []string {
+	fmt.Println(url)
+	list, err := links.Extract(url)
+	if err != nil {
+		log.Print(err)
+	}
+	return list
+}
+
 func basename(s string) string {
 	for i := len(s) - 1; i >= 0; i-- {
 		if s[i] == '/' {
@@ -246,6 +292,20 @@ func testchan() int {
 }
 
 func main() {
+	// s1 := make([]int, 4)
+	// s2 := []int{1, 2, 3, 4, 56, 7, 8, 9}
+	// res := copy(s1, s2)
+	// fmt.Println(s1)
+	// fmt.Println(res)
+
+	// var m map[string][]string
+	// m := make(map[string][]string)
+	// m := map[string][]string{"aaa": {"bbb"}}
+	// m["aaa"] = make([]string, 5)
+	// fmt.Println(cap(m["aaa"]))
+	// m["aaa"] = append(m["aaa"], "aaa")
+	// s := son{a{1}, b{2}}
+	// fmt.Println(s.a.ma())
 	// findDuplicateLines()
 	// animateGifs()
 	// fetchUrls()
@@ -299,7 +359,6 @@ func main() {
 	// 	fmt.Println(c)
 	// 	fmt.Println(ss[i])
 	// }
-
 	// fmt.Println(s)
 	// fmt.Println(ss)
 
@@ -329,7 +388,26 @@ func main() {
 	// 	}
 	// 	break
 	// }
+	// strings.Contains()
+	// bytes.Contains
 
-	testchan()
-	time.Sleep(2 * time.Second)
+	// fmt.Println(s)
+	// fmt.Println(ss)
+
+	worklist := make(chan []string)
+	go func() { worklist <- os.Args[1:] }()
+
+	seen := make(map[string]bool)
+	for list := range worklist {
+		for _, link := range list {
+			fmt.Println(link)
+			if !seen[link] {
+				seen[link] = true
+				go func(link string) {
+					// worklist <- crawl(link)
+					crawl(link)
+				}(link)
+			}
+		}
+	}
 }
