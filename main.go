@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 	// "unicode/utf8"
+	"flag"
+	"path/filepath"
 )
 
 func findDuplicateLines() {
@@ -237,9 +239,13 @@ func testWaitGroup() {
 	wg.Wait()
 }
 
+var tokens = make(chan struct{}, 20)
+
 func crawl(url string) []string {
 	fmt.Println(url)
+	tokens <- struct{}{}
 	list, err := links.Extract(url)
+	<-tokens
 	if err != nil {
 		log.Print(err)
 	}
@@ -291,123 +297,148 @@ func testchan() int {
 	return <-ch
 }
 
-func main() {
-	// s1 := make([]int, 4)
-	// s2 := []int{1, 2, 3, 4, 56, 7, 8, 9}
-	// res := copy(s1, s2)
-	// fmt.Println(s1)
-	// fmt.Println(res)
-
-	// var m map[string][]string
-	// m := make(map[string][]string)
-	// m := map[string][]string{"aaa": {"bbb"}}
-	// m["aaa"] = make([]string, 5)
-	// fmt.Println(cap(m["aaa"]))
-	// m["aaa"] = append(m["aaa"], "aaa")
-	// s := son{a{1}, b{2}}
-	// fmt.Println(s.a.ma())
-	// findDuplicateLines()
-	// animateGifs()
-	// fetchUrls()
-
-	// fetchUrlsConcurrently()
-
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	lissajous(w)
-	// })
-	// http.HandleFunc("/count", counter)
-	// http.HandleFunc("/favicon.ico", handlerICon)
-	// log.Fatal(http.ListenAndServe("localhost:8000", nil))
-
-	// flag.Parse()
-	// fmt.Print(strings.Join(flag.Args(), *sep))
-	// if !*n {
-	// 	fmt.Println()
-	// }
-
-	// p := new(struct{})
-	// q := new(struct{})
-
-	// fmt.Println(p == q)
-
-	// ascii := 'a'
-	// unicode := '国'
-	// newLine := '\n'
-
-	// for x := 0; x < 15; x++ {
-	// 	fmt.Printf("x = %d e A = %5.3f\n", x, math.Exp(float64(x)))
-	// }
-
-	// fmt.Printf("%d %[1]c %[1]q \n", ascii)
-	// fmt.Printf("%d %[1]c %[1]q \n", unicode)
-	// fmt.Printf("%d %[1]q \n", newLine)
-	// svg()
-	// s := `asdfasdfas
-	// asdfasdf
-	// asdfasd\\\\\asdfasd
-	// asdfas`
-	// fmt.Println(s)
-
-	// s := []int{1, 2, 3, 4, 5}
-	// // s := "abcdef"
-	// ss := s[:]
-	// fmt.Println(&s)
-	// fmt.Println(&ss)
-	// for i, c := range ss {
-	// 	c++
-	// 	// s[i]++
-	// 	fmt.Println(c)
-	// 	fmt.Println(ss[i])
-	// }
-	// fmt.Println(s)
-	// fmt.Println(ss)
-
-	// var buf bytes.Buffer
-	// length, _ := buf.WriteRune('[')
-	// fmt.Println(length)
-	// length, _ = buf.WriteRune('樊')
-	// fmt.Println(length)
-	// s := buf.String()
-	// fmt.Println(len(s))
-	// fmt.Println(buf.String())
-	// tests := []int{}
-	// tests = append(tests, 1)
-	//s := testNilSlice(nil)
-	//fmt.Println(s)
-	//fmt.Println(len(s))
-	//fmt.Println(cap(s))
-	// var x interface{}
-	// x = true
-	// switch x := x.(type) {
-	// case int:
-	// 	fmt.Println(x)
-	// 	break
-	// case bool:
-	// 	if x {
-	// 		fmt.Println(x)
-	// 	}
-	// 	break
-	// }
-	// strings.Contains()
-	// bytes.Contains
-
-	// fmt.Println(s)
-	// fmt.Println(ss)
-
-	worklist := make(chan []string)
-	go func() { worklist <- os.Args[1:] }()
-
-	seen := make(map[string]bool)
-	for list := range worklist {
-		for _, link := range list {
-			fmt.Println(link)
-			if !seen[link] {
-				seen[link] = true
-				go func(link string) {
-					// worklist <- crawl(link)
-					crawl(link)
-				}(link)
-			}
+func walkDir(dir string, n *sync.WaitGroup, fileSize chan<- int64) {
+	defer n.Done()
+	for _, entry := range dirents(dir) {
+		if entry.IsDir() {
+			n.Add(1)
+			subdir := filepath.Join(dir, entry.Name())
+			go walkDir(subdir, n, fileSize)
+		} else {
+			fileSize <- entry.Size()
 		}
 	}
+}
+
+func walkDir2(dir string, fileSize chan<- int64) {
+	// defer n.Done()
+	for _, entry := range dirents(dir) {
+		if entry.IsDir() {
+			// n.Add(1)
+			subdir := filepath.Join(dir, entry.Name())
+			walkDir2(subdir, fileSize)
+		} else {
+			fileSize <- entry.Size()
+		}
+	}
+}
+
+var sema = make(chan struct{}, 20)
+
+func dirents(dir string) []os.FileInfo {
+	sema <- struct{}{}
+	defer func() {
+		<-sema
+	}()
+	entries, err := ioutil.ReadDir(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "du1 : %v \n", err)
+		return nil
+	}
+	return entries
+}
+
+func printDiskUsage(nfiles, nbytes int64) {
+	fmt.Printf("%d files %.1f GB\n", nfiles, float64(nbytes)/1e9)
+}
+
+var verbose = flag.Bool("v", false, "show verbose progerss messaged")
+
+func main() {
+	start := time.Now()
+	defer func() {
+		fmt.Println(time.Since(start))
+	}()
+	flag.Parse()
+	roots := flag.Args()
+	if len(roots) == 0 {
+		roots = []string{"."}
+	}
+
+	fmt.Println(roots)
+	fileSize := make(chan int64)
+	var n sync.WaitGroup
+	// go func() {
+	for _, root := range roots {
+		n.Add(1)
+		go walkDir(root, &n, fileSize)
+	}
+	// close(fileSize)
+
+	// }()
+
+	go func() {
+		n.Wait()
+		close(fileSize)
+	}()
+
+	var tick <-chan time.Time
+	if *verbose {
+		tick = time.Tick(500 * time.Millisecond)
+	}
+
+	var nFiles, nbytes int64
+loop:
+	for {
+		select {
+		case size, ok := <-fileSize:
+			if !ok {
+				break loop
+			}
+			nFiles++
+			nbytes += size
+		case <-tick:
+			printDiskUsage(nFiles, nbytes)
+		}
+	}
+
+	printDiskUsage(nFiles, nbytes)
+
+	// worklist := make(chan []string)
+	// unseenLinks := make(chan string)
+	// var n int
+	// n++
+	// go func() { worklist <- os.Args[1:] }()
+
+	// for i := 0; i < 20; i++ {
+	// 	go func() {
+	// 		for link := range unseenLinks {
+	// 			foundLinks := crawl(link)
+	// 			go func() {
+	// 				worklist <- foundLinks
+	// 			}()
+	// 		}
+	// 	}()
+	// }
+
+	// seen := make(map[string]bool)
+	// for ; n > 0; n-- {
+	// 	for list := range worklist {
+	// 		for _, link := range list {
+	// 			if !seen[link] {
+	// 				seen[link] = true
+	// 				n++
+	// 				unseenLinks <- link
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	// worklist := make(chan []string)
+	// var n int
+	// n++
+	// go func() { worklist <- os.Args[1:] }()
+	// seen := make(map[string]bool)
+	// for ; n > 0; n-- {
+	// 	list := <-worklist
+	// 	for _, link := range list {
+	// 		if !seen[link] {
+	// 			seen[link] = true
+	// 			n++
+	// 			go func(link string) {
+	// 				worklist <- crawl(link)
+	// 			}(link)
+	// 		}
+	// 	}
+	// }
 }
