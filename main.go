@@ -344,7 +344,7 @@ func printDiskUsage(nfiles, nbytes int64) {
 
 var verbose = flag.Bool("v", false, "show verbose progerss messaged")
 
-func main() {
+func du() {
 	start := time.Now()
 	defer func() {
 		fmt.Println(time.Since(start))
@@ -393,52 +393,21 @@ loop:
 	}
 
 	printDiskUsage(nFiles, nbytes)
+}
 
-	// worklist := make(chan []string)
-	// unseenLinks := make(chan string)
-	// var n int
-	// n++
-	// go func() { worklist <- os.Args[1:] }()
+func print(pi *int) { fmt.Println(*pi) }
 
-	// for i := 0; i < 20; i++ {
-	// 	go func() {
-	// 		for link := range unseenLinks {
-	// 			foundLinks := crawl(link)
-	// 			go func() {
-	// 				worklist <- foundLinks
-	// 			}()
-	// 		}
-	// 	}()
-	// }
+func testError() {
+	for i := 0; i < 10; i++ {
+		// defer fmt.Println(i) // OK; prints 9 ... 0
+		// defer func() { fmt.Println(i) }() // WRONG; prints "10" 10 times
+		// defer func(i int) { fmt.Println(i) }(i) // OK
+		defer print(&i) // WRONG; prints "10" 10 times
+		// go fmt.Println(i)                       // OK; prints 0 ... 9 in unpredictable order
+		// go func() { fmt.Println(i) }()          // WRONG; totally unpredictable.
+	}
+}
 
-	// seen := make(map[string]bool)
-	// for ; n > 0; n-- {
-	// 	for list := range worklist {
-	// 		for _, link := range list {
-	// 			if !seen[link] {
-	// 				seen[link] = true
-	// 				n++
-	// 				unseenLinks <- link
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// worklist := make(chan []string)
-	// var n int
-	// n++
-	// go func() { worklist <- os.Args[1:] }()
-	// seen := make(map[string]bool)
-	// for ; n > 0; n-- {
-	// 	list := <-worklist
-	// 	for _, link := range list {
-	// 		if !seen[link] {
-	// 			seen[link] = true
-	// 			n++
-	// 			go func(link string) {
-	// 				worklist <- crawl(link)
-	// 			}(link)
-	// 		}
-	// 	}
-	// }
+func main() {
+	testError()
 }
