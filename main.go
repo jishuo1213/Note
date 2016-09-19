@@ -21,6 +21,7 @@ import (
 	"time"
 	// "unicode/utf8"
 	"flag"
+	"net"
 	"path/filepath"
 )
 
@@ -408,6 +409,104 @@ func testError() {
 	}
 }
 
+type client chan<- string
+
+var (
+	entering = make(chan client)
+	leaving  = make(chan client)
+	messages = make(chan string)
+)
+
+func broadcaster() {
+	clients := make(map[client]bool)
+	for {
+		select {
+		case msg := <-messages:
+			for cli := range clients {
+				cli <- msg
+			}
+		case cli := <-entering:
+			clients[cli] = true
+		case cli := <-leaving:
+			delete(clients, cli)
+			close(cli)
+		}
+	}
+}
+
+func handleConn(conn net.Conn) {
+	ch := make(chan string)
+	go clientWriter(conn, ch)
+	who := conn.RemoteAddr().String()
+	ch <- "You are" + who
+	messages <- who + " has arrived"
+	entering <- ch
+
+	input := bufio.NewScanner(conn)
+
+	for input.Scan() {
+		messages <- who + ":" + input.Text()
+	}
+
+	leaving <- ch
+	messages <- who + " has left"
+	conn.Close()
+}
+
+func chatServer() {
+	listener, err := net.Listen("tcp", "localhost:8000")
+	if err != nil {
+		log.Fatal(err)
+	}
+	go broadcaster()
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+		go handleConn(conn)
+	}
+}
+
+func clientWriter(conn net.Conn, ch <-chan string) {
+	for msg := range ch {
+		fmt.Fprintln(conn, msg)
+	}
+}
+
+var deposits = make(chan int)
+var balances = make(chan int)
+
+func teller() {
+	var balance int // balance is confined to teller goroutine
+	for {
+		select {
+		case amount := <-deposits:
+			balance += amount
+		case balances <- balance: //这个条件表示从balance读的时候会触发
+			log.Print("aaaa")
+		}
+	}
+}
+
+type Cake struct{ state string }
+
+func getCake() *Cake {
+	c := Cake{"aaa"}
+	log.Printf("%p\n", &c)
+	return &c
+}
+
 func main() {
-	testError()
+	// cake := new(Cake)
+	// testError()
+	// chatServer()
+	// go teller()
+	// for i := 0; i < 10; i++ {
+	// 	log.Print("bbb")
+	// 	deposits <- 200
+	// }
+	// log.Print(<-balances)
+	// log.Print(<-balances)
 }
