@@ -1,0 +1,6 @@
+build openssl to wasm
+
+1: emconigure ./Configure linux-x32 no-asm no-threads no-tests no-dso no-engine no-hw   --prefix=/home/fan//Tools/TASSL-1.1.1b/emcc-build-v2
+2: sed -i 's|^CROSS_COMPILE.*$|CROSS_COMPILE=|g' Makefile
+3: emmake make
+4: emmake make install
