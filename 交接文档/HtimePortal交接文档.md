@@ -64,8 +64,127 @@ go mod tidy
 
 下载依赖，每次go.mod文件出现改动之后，需要重新运行此命令。
 
+### 3    基础框架
+
+#### 3.1 概述
+
+所有go工程都有一些公用的依赖，包含常用工具方法、加解密、web框架、服务注册、服务发现、配置管理等。主要有以下四个工程:
+
+|   工程名    | git地址                                        | 简介                                                         |
+| :---------: | :--------------------------------------------- | :----------------------------------------------------------- |
+|   Logger    | http://10.110.9.195:8888/ccwork/go/Logger.git  | 日志库，包含基本的日志分级、分文件等功能                     |
+| DBOperation | http://10.110.9.195:8888/ccwork/go/DBOperation | 数据库操作库，包含mysql、es、redis、sqlite、etcd、hbase、国产数据库等基础操作封装 |
+|    Utils    | http://10.110.9.195:8888/ccwork/go/utils.git   | 包含常用加解密、http请求、服务注册发现、动态配置管理、web框架封装等功能 |
+|    proto    | http://10.110.9.195:8888/ccwork/go/proto.git   | 各个服务的grpc描述文件                                       |
+
+#### 3.2 Logger
+
+logger是基于 [lumberjack Logger]: https://github.com/natefinch/lumberjack 日志记录封装库，一般用法如下：
+
+```go
+logger.InitLogConfig(logger.DEBUG, isDebug)//初始化配置，包含log等级和是否debug模式，debug模式会把所有日志打到标准输出,注意，必须进行初始化，不初始化直接使用会panic
+logger.Debugf("upload path not existed:%v", err)
+logger.Errorf("upload path not existed:%v", err)
+logger.Fatalf("upload path not existed:%v", err)
+```
+
+非debug模式，会把不同等级日志打到服务包所在目录logfile文件夹下不同文件里面，具体的日志文件保存和删除策略，可以参考源码。
+
+一些需要改进的点:
+
+* 同一目录不同服务日志分开
+* 日志格式美化
+
+#### 3.3 DBOperation
+
+DBOperation是数据库操作封装库，包含一些常用的诸如mysql、mongo、redis等操作。
+
+目录结构如下:
+
+```
+├── es
+│   ├── es.go
+│   └── es_test.go
+├── etcd
+│   ├── etcd.go
+│   └── etcd_test.go
+├── hbase
+│   ├── hbase.go
+│   └── hbase_test.go
+├── ldap
+│   ├── ldap.go
+│   └── ldap_test.go
+├── main.go
+├── mongo
+│   └── mgo_operation.go
+├── mysql---------------------------------------------------------------------------es
+│   ├── dmsql_drive.go
+│   ├── mysql_drive.go
+│   ├── mysql.go
+│   ├── mysql_test.go
+│   └── oracle_drive.go
+├── nsq
+│   ├── consumer.go
+│   ├── consumer_test.go
+│   ├── producer.go
+│   └── producer_test.go
+├── orm
+│   ├── orm.go
+│   └── orm_test.go
+├── redis
+│   ├── redis.go
+│   └── redis_test.go
+├── sqlite
+│   ├── orm.go
+│   ├── sqlite.go
+│   └── sqlite_test.go
+└── zk
+    ├── lock.go
+    └── operation.go
+```
+
+每个包代表一类数据库操作封装，具体使用方式可以参照test文件或者具体项目写法，其中， mysql包中包含达蒙和oracle
+
 ### 3	用户中心
 
 #### 3.1 概述
 
-用户中心是云上协同App
+用户中心是云上协同App和管理后台负责登录、认证、用户管理等功能的一系列服务集合。git地址为:
+
+```shel
+http://10.110.9.195:8888/ccwork/go/HtimePortal.git
+```
+
+目录结构如下:
+
+```
+.
+├── config---------------------------------------------------------------------------配置读取
+├── eventsync------------------------------------------------------------------------事件同步服务
+├── htimefile------------------------------------------------------------------------文件上传代理
+├── htimesearch----------------------------------------------------------------------搜索服务
+├── kafka
+├── lock
+├── orgmanager-----------------------------------------------------------------------互联网组织绑定服务
+├── patch
+├── proof
+├── rbac-----------------------------------------------------------------------------角色服务
+├── router
+├── rpc
+├── server
+├── service
+│   ├── common
+│   ├── email
+│   ├── htime
+│   ├── inner
+│   ├── logic
+│   ├── portal
+│   ├── repo
+│   └── sms
+├── servicenumber---------------------------------------------------------------------服务号管理服务
+├── sync
+├── thirdauth-------------------------------------------------------------------------第三方认证服务
+├── uploads
+└── version
+```
+
