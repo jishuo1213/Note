@@ -31,26 +31,26 @@ vJtDFca4wNz8pAyM8KMG
 之后使用如下命令配置gomod依赖git私服替换地址:
 
 ```shell
-git config --global url."http://{{git_user_name}}:{{access_token}}@git.icity.cn:{{port}}".insteadOf "https://git.icity.cn"
+git config --global url."http://{{git_user_name}}:{{access_token}}@git.inspur.com:{{port}}".insteadOf "https://git.inspur.com"
 ```
 
 然后配置gomod环境变量:
 
 ```shell
 go env -w GOPROXY=https://goproxy.io,direct
-go env -w GOPRIVATE=git.icity.cn
+go env -w GOPRIVATE=git.inspur.com
 ```
 
 最后 在host文件添加映射:
 
 ```
-{{gitlab_ip}} git.icity.cn
+{{gitlab_ip}} git.inspur.com
 ```
 
 其中:
 
 ```
-git_user_name:用户的git用户名
+git_user_name:用户的git用户名 需要urlencode
 access_token:上一步生成得access_token
 port:gitlab私服的端口，如果是80端口，可以不写
 gitlab_ip:私服gitlab ip地址
@@ -79,7 +79,7 @@ go mod tidy
 
 #### 3.2 Logger
 
-logger是基于 [lumberjack Logger]: https://github.com/natefinch/lumberjack 日志记录封装库，一般用法如下：
+logger是基于 [lumberjack Logger]: https://github.com/natefinch/lumberjack 的日志记录封装库，一般用法如下：
 
 ```go
 logger.InitLogConfig(logger.DEBUG, isDebug)//初始化配置，包含log等级和是否debug模式，debug模式会把所有日志打到标准输出,注意，必须进行初始化，不初始化直接使用会panic
@@ -102,6 +102,10 @@ DBOperation是数据库操作封装库，包含一些常用的诸如mysql、mong
 目录结构如下:
 
 ```
+.
+├── dbmanger
+│   ├── dbmanger.go
+│   └── dbmanger_test.go
 ├── es
 │   ├── es.go
 │   └── es_test.go
@@ -114,10 +118,9 @@ DBOperation是数据库操作封装库，包含一些常用的诸如mysql、mong
 ├── ldap
 │   ├── ldap.go
 │   └── ldap_test.go
-├── main.go
 ├── mongo
 │   └── mgo_operation.go
-├── mysql---------------------------------------------------------------------------es
+├── mysql
 │   ├── dmsql_drive.go
 │   ├── mysql_drive.go
 │   ├── mysql.go
@@ -141,13 +144,95 @@ DBOperation是数据库操作封装库，包含一些常用的诸如mysql、mong
 └── zk
     ├── lock.go
     └── operation.go
+
 ```
 
-每个包代表一类数据库操作封装，具体使用方式可以参照test文件或者具体项目写法，其中， mysql包中包含达蒙和oracle
+每个包代表一类数据库操作封装，具体使用方式可以参照test文件或者具体项目源码写法，其中， mysql包中包含达蒙和oracle数据库驱动的封装，由于这两种是后来新加的功能，为了兼容代码和api调用方式，使用的是编译选项形式，进行驱动切换，如下：
 
-### 3	用户中心
+```
+go build -tags=oracle main.go//使用oracle驱动
+go build -tags=dm main.go //达蒙数据库驱动
+```
 
-#### 3.1 概述
+#### 3.4 utils
+
+包含常用加解密、http请求、服务注册发现、动态配置管理、web框架封装等功能
+
+目录结构如下:
+
+```
+.
+├── configcenter---------------------------------------------------------------------------配置管理，可以从文件或者consul读取配置，自动监测变化
+│   ├── configcenter_test.go
+│   ├── config.go
+│   └── loader.go
+├── consul----------------------------------------------------------------------------------consul常用操作封装
+│   ├── config.go
+│   ├── consul_test.go
+│   ├── discover.go
+│   ├── health_check.go
+│   └── register.go
+├── crypto----------------------------------------------------------------------------------常用加解密工具包
+│   ├── aes
+│   ├── cipher
+│   ├── encrypt.go
+│   ├── padding
+│   └── smx
+├── discovery----------------------------------------------------------------------------------consul服务发现
+│   ├── consul.go
+│   ├── disconery_test.go
+│   └── discovery.go
+├── gitapi-------------------------------------------------------------------------------------gitlab操作封装
+│   ├── gitapi.go
+│   └── gitapi_test.go
+├── http---------------------------------------------------------------------------------------http请求客户端
+│   ├── client.go
+│   ├── client_test.go
+│   ├── http_test.go
+│   ├── request.go
+│   ├── response.go
+│   └── trace.go
+├── http_requester.go
+├── kafka---------------------------------------------------------------------------------------kafka操作封装
+│   ├── kafka.go
+│   └── kafka_test.go
+├── keylock---------------------------------------------------------------------------------------内存锁
+│   └── keylock.go
+├── option---------------------------------------------------------------------------------------go风格参数设置
+│   └── option.go
+├── server-------------------------------------------------------------------------基于httprouter的简单web框架封装，用法和gin一样，支持链路追踪
+│   ├── const.go
+│   ├── consul.go
+│   ├── context.go
+│   ├── engine.go
+│   ├── iRouter.go
+│   ├── logger.go
+│   ├── recover.go
+│   ├── router.go
+│   └── trace.go
+├── signal-------------------------------------------------------------------------系统信号封装，包含kill等信号监测
+│   ├── signal.go
+│   └── signal_windows.go
+├── snow_flake.go-------------------------------------------------------------------------雪花算法生成
+├── sugar-------------------------------------------------------------------------一些语法糖
+│   └── sugar.go
+├── text-------------------------------------------------------------------------文本相关的工具操作，有很多在utils.go里面
+│   ├── text.go
+│   └── text_test.go
+├── trace-------------------------------------------------------------------------链路追踪工具类
+│   └── trace.go
+├── utils.go-------------------------------------------------------------------------乱七八糟的工具方法，需要整理一下
+└── zip.go-------------------------------------------------------------------------zip压缩方法
+
+```
+
+这里重点就是consul、server、kafka、配置管理相关，用法可以参照test文件和各个项目代码。
+
+
+
+### 4	用户中心
+
+#### 4.1 概述
 
 用户中心是云上协同App和管理后台负责登录、认证、用户管理等功能的一系列服务集合。git地址为:
 
@@ -172,9 +257,9 @@ http://10.110.9.195:8888/ccwork/go/HtimePortal.git
 ├── router
 ├── rpc
 ├── server
-├── service
+├── service-----------------------------------------------------------------------------暴露的http接口
 │   ├── common
-│   ├── email
+│   ├── email-----------------------------------------------------------------------------
 │   ├── htime
 │   ├── inner
 │   ├── logic
